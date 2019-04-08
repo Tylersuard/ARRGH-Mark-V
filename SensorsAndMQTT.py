@@ -7,18 +7,41 @@
 #2.  Upload DoConnect2.py and test with cell phone app interfaces so you can connect to it and then do the password stuff.
 #3.  Upload this file and run it.
 
+Softversion = 0.3
+Softbuild = 20190301PINS_MQTT_JSON
+
 import machine
 import time
 import os
 import network
 from umqtt.simple import MQTTClient
+import ubinascii
+
+
+#Find ESP-12's IP address and set it to variable name "deviceIP"
+sta_if = network.WLAN(network.STA_IF)
+ap_if = network.WLAN(network.AP_IF)
+ap_if.active(True)  #activate access point
+apIP = ap_if.ifconfig()
+deviceIP = apIP[0]
+
+#Find MAC address of ESP-12 and set it to variable name "last4Mac"
+macAddrBinary = ap_if.config('mac')
+convertedMac = ubinascii.hexlify(macAddrBinary, ":")
+finalMac = convertedMac.decode()
+last4Mac = str(finalMac[12:14] + finalMac[15:])
+
+MarkVAlert = "All Clear"
 
 #Set up MQTT Connection
-SERVER = "mqtt.thingspeak.com"
+SERVER = "54.190.195.131:1883"
 client = MQTTClient("umqtt_client",SERVER)
 CHANNEL_ID = "713253"
 WRITE_API_KEY = "BQRSYIB83FET09D9"
-topic = "channels/" + CHANNEL_ID + "/publish/" + WRITE_API_KEY
+topic = "BCN/from_device/Arrgh_"+last4Mac
+longAssPrefix = "{\"ALERT\":\"" + MarkVAlert + "\", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+#Spell check this one ^^^
+
 
 # H2 1% detector: Changed to Pin 9 from pin 16
 H2_alarm_1 = machine.Pin(9, machine.Pin.IN, machine.Pin.PULL_UP)
@@ -130,7 +153,9 @@ def H2_2_Alert():
     print('2% H2: Detected!')
     H2_Alert_Red_Blink_And_Transmit_To_Fan()
     #Send wifi alarm:
-    payload = "field1="+"2% H2: Detected!"
+    MarkVAlert = "\"1%_H2\":1, \"2%_H2\":2, \"Smoke\":0, \"Motion\":0"
+    longAssPrefix = "{"+ MarkVAlert + ", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+    payload = longAssPrefix
     client.connect()
     client.publish(topic, payload)
     client.disconnect()
@@ -142,7 +167,9 @@ def Smoke_Alert():
     Smoke_Alert_Flash()
     #turn fan off
     #Send wifi alarm:
-    payload = "field1="+"Smoke: Detected!"
+    MarkVAlert = "\"1%_H2\":0, \"2%_H2\":0, \"Smoke\":1, \"Motion\":0"
+    longAssPrefix = "{"+ MarkVAlert + ", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+    payload = longAssPrefix
     client.connect()
     client.publish(topic, payload)
     client.disconnect()
@@ -156,7 +183,9 @@ def Smoke_Alert_And_H2_1():
     Smoke_Alert_Flash()
     #turn fan off
     #Send wifi alarm;
-    payload = "field1="+"Smoke: Detected!  1% H2: Detected!"
+    MarkVAlert = "\"1%_H2\":1, \"2%_H2\":0, \"Smoke\":1, \"Motion\":0"
+    longAssPrefix = "{"+ MarkVAlert + ", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+    payload = longAssPrefix
     client.connect()
     client.publish(topic, payload)
     client.disconnect()
@@ -169,7 +198,9 @@ def Smoke_Alert_And_H2_2():
     Smoke_Alert_Flash()
     #turn fan off
     #Send wifi alarm:
-    payload = "field1="+"Smoke: Detected!  2% H2: Detected!"
+    MarkVAlert = "\"1%_H2\":1, \"2%_H2\":1, \"Smoke\":1, \"Motion\":0"
+    longAssPrefix = "{"+ MarkVAlert + ", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+    payload = longAssPrefix
     client.connect()
     client.publish(topic, payload)
     client.disconnect()
@@ -180,7 +211,9 @@ def IR_Sensor_Alert():
     print('Movement Detected!')
     Intrusion_Alert_Blink()
     #Send wifi alarm:
-    payload = "field1="+"Movement Detected!"
+    MarkVAlert = "\"1%_H2\":0, \"2%_H2\":0, \"Smoke\":0, \"Motion\":1"
+    longAssPrefix = "{"+ MarkVAlert + ", \"host_Name\":\"Arrgh_" + last4Mac + "\", \"On_line\":1, \"IP\":\"" + deviceIP + "\", \"Version\":\"" + Softversion + "\", \"Build\":\"" + Softbuild + "\"}"
+    payload = longAssPrefix
     client.connect()
     client.publish(topic, payload)
     client.disconnect()
